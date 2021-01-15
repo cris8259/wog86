@@ -11,6 +11,6 @@ int main(int argc, char **argv, char **envp)
     strcpy(filename, argv[1]);
     int e_argc = argc - 1;
     char **e_argv = argv + 1;
-    if (!is_exec(filename)||!check_elf(filename))
-	    exit(0);
+    if (!is_exec(filename) || !check_elf(filename))
+        exit(0);
 }

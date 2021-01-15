@@ -18,9 +18,10 @@ int check_elf(const char *filename)
     if (memcmp(header.e_ident, ELFMAG, SELFMAG) != 0 || header.e_ident[EI_CLASS] != ELFCLASS32
         || header.e_ident[EI_DATA] != ELFDATA2LSB || header.e_ident[EI_VERSION] != EV_CURRENT
         || (header.e_ident[EI_OSABI] != ELFOSABI_LINUX && header.e_ident[EI_OSABI] != ELFOSABI_NONE
-            && header.e_ident[EI_OSABI] != ELFOSABI_SYSV) || (header.e_type != ET_EXEC
-                                                              && header.e_type != ET_DYN)
-        || header.e_machine != EM_386 || header.e_entry == 0)
+            && header.e_ident[EI_OSABI] != ELFOSABI_SYSV) || header.e_ehsize != sizeof(Elf32_Ehdr)
+        || header.e_phentsize != sizeof(Elf32_Phdr) || (header.e_type != ET_EXEC
+                                                      && header.e_type != ET_DYN)
+        || header.e_machine != EM_386)
         return 0;
     return 1;
 }
