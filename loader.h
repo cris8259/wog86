@@ -1,1 +1,2 @@
-int check_elf(const char *filename);
+int check_elf(FILE * f);
+int load_elf(FILE * f);
