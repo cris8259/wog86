@@ -31,6 +31,9 @@ int load_elf(FILE * f)
 {
     Elf32_Ehdr ehdr;
     Elf32_Phdr phdr;
+
+    if (!check_elf(f))
+        return 0;
     int fd = fileno(f);
 
     if (fread(&ehdr, sizeof(Elf32_Ehdr), 1, f) != 1)
