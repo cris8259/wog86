@@ -65,7 +65,7 @@ int load_elf(FILE * f)
                     prot |= PROT_EXEC;
             if (mmap
                 ((void *)(phdr.p_vaddr & ~(PAGESIZE - 1)),
-                 phdr.p_filesz + phdr.p_vaddr & (PAGESIZE - 1), prot,
+                 phdr.p_filesz, prot,
                  MAP_PRIVATE | (ehdr.e_type == ET_EXEC ? MAP_FIXED : 0), fd,
                  phdr.p_offset - (phdr.p_vaddr & (PAGESIZE - 1))) == MAP_FAILED)
                 return 0;
