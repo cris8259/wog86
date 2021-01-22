@@ -74,7 +74,7 @@ load_elf (FILE * f)
 	  if (phdr.p_filesz < phdr.p_memsz)
 	    {
 	      if (mmap
-		  ((void *) ((phdr.p_vaddr + phdr.p_filesz + PAGESIZE - 1) &
+		  ((void *) ((phdr.p_vaddr + phdr.p_filesz) &
 			     ~(PAGESIZE - 1)), phdr.p_memsz - phdr.p_filesz,
 		   prot, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, -1,
 		   0) == MAP_FAILED)
