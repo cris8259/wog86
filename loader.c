@@ -4,6 +4,7 @@
 #include<string.h>
 #include<elf.h>
 #include<sys/mman.h>
+#include<sys/user.h>
 #include"loader.h"
 
 int check_elf(FILE * f)
