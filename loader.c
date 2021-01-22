@@ -11,6 +11,7 @@ int check_elf(FILE * f)
 {
     Elf32_Ehdr header;
 
+    fseek(f, 0, SEEK_SET);
     if (fread(&header, sizeof(Elf32_Ehdr), 1, f) != 1)
         return 0;
     if (memcmp(header.e_ident, ELFMAG, SELFMAG) != 0
@@ -35,6 +36,7 @@ int load_elf(FILE * f)
 
     if (!check_elf(f))
         return 0;
+    fseek(f, 0, SEEK_SET);
     int fd = fileno(f);
 
     if (fread(&ehdr, sizeof(Elf32_Ehdr), 1, f) != 1)
