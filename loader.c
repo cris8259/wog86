@@ -66,7 +66,7 @@ int load_elf(FILE * f)
                     prot |= PROT_EXEC;
             if (mmap
                 ((void *)(phdr.p_vaddr & ~(PAGE_SIZE - 1)),
-                 phdr.p_filesz + PAGESIZE - 1, prot,
+                 phdr.p_filesz + PAGE_SIZE - 1, prot,
                  MAP_PRIVATE | (ehdr.e_type == ET_EXEC ? MAP_FIXED : 0), fd,
                  phdr.p_offset - (phdr.p_vaddr & (PAGE_SIZE - 1))) ==
                 MAP_FAILED)
@@ -74,7 +74,7 @@ int load_elf(FILE * f)
             if (phdr.p_filesz < phdr.p_memsz)
             {
                 if (mmap
-                    ((void *)((phdr.p_vaddr + phdr.p_filesz + PAGESIZE - 1) &
+                    ((void *)((phdr.p_vaddr + phdr.p_filesz + PAGE_SIZE - 1) &
                               ~(PAGE_SIZE - 1)), phdr.p_memsz - phdr.p_filesz,
                      prot, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, -1,
                      0) == MAP_FAILED)
