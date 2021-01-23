@@ -23,7 +23,7 @@ int main(int argc, char **argv, char **envp)
     f = fopen(filename, "rb");
     if (!(entry = load_elf(f)))
         exit(-1);
-
+    fclose(f);
     Elf32_Ehdr ehdr;
     x86regs regs;
 

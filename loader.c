@@ -49,6 +49,7 @@ unsigned int load_elf(FILE * f)
     void *map_addr = NULL;
     unsigned int addr;
     unsigned int len;
+    char *interp = NULL;
     int i, j;
     for (i = 0, j = 0; i < ehdr.e_phnum; i++)
     {
@@ -69,7 +70,16 @@ unsigned int load_elf(FILE * f)
                 len = phdr.p_vaddr + phdr.p_memsz - addr;
             j++;
         }
-	if(phdr.p_type)
+        else if (phdr.p_type == PT_INTERP)
+        {
+            if (interp != NULL)
+                return 0;
+            interp = (char *)malloc(phdr.p_filesz);
+            pread(fd, interp, phdr.p_filesz, phdr.p_offset);
+            if (!load_interp(interp))
+                return 0;
+            free(interp);
+        }
     }
     map_addr =
         mmap((void *)addr, (len + PAGESIZE - 1) & (~(PAGESIZE - 1)), PROT_NONE,
@@ -92,20 +102,36 @@ unsigned int load_elf(FILE * f)
             if (phdr.p_flags & PF_X)
                 prot |= PROT_EXEC;
             map_addr =
-                mmap((void *)((ehdr.e_type==ET_DYN?addr:phdr.p_vaddr) & (~(PAGESIZE - 1))),
+                mmap((void *)((ehdr.e_type == ET_DYN ? addr : phdr.p_vaddr) & (~(PAGESIZE - 1))),
                      (phdr.p_filesz + PAGESIZE - 1) & (~(PAGESIZE - 1)), prot,
-                     MAP_FIXED | MAP_PRIVATE, fd, phdr.p_offset-(phdr.p_vaddr-(phdr.p_vaddr&(~(PAGESIZE-1)))));
+                     MAP_FIXED | MAP_PRIVATE, fd,
+                     phdr.p_offset - (phdr.p_vaddr - (phdr.p_vaddr & (~(PAGESIZE - 1)))));
             if (map_addr == MAP_FAILED)
                 return 0;
-	    addr+=phdr.p_filesz+PAGESIZE-1;
-	    addr&=~(PAGESIZE-1);
-	    if(phdr.p_filesz<phdr.p_memsz)
-	    {
-		    map_addr=mmap((void*)((ehdr.e_type==ET_DYN?addr:(phdr.p_vaddr&(~(PAGESIZE-1)))+phdr.p_filesz+PAGESIZE-1)&(~(PAGESIZE-1))),(phdr.p_memsz-phdr.p_filesz+PAGESIZE-1)&(~(PAGESIZE-1)),prot,MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS,-1,0);
-		    addr+=phdr.p_filesz+PAGESIZE-1;
-		    addr&=~(PAGESIZE-1);
-	    }
+            addr += phdr.p_filesz + PAGESIZE - 1;
+            addr &= ~(PAGESIZE - 1);
+            if (phdr.p_filesz < phdr.p_memsz)
+            {
+                map_addr =
+                    mmap((void
+                          *)((ehdr.e_type ==
+                              ET_DYN ? addr : (phdr.p_vaddr & (~(PAGESIZE - 1))) + phdr.p_filesz +
+                              PAGESIZE - 1) & (~(PAGESIZE - 1))),
+                         (phdr.p_memsz - phdr.p_filesz + PAGESIZE - 1) & (~(PAGESIZE - 1)), prot,
+                         MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+                addr += phdr.p_filesz + PAGESIZE - 1;
+                addr &= ~(PAGESIZE - 1);
+            }
         }
     }
     return entry;
+}
+
+int load_interp(const char *filename)
+{
+    FILE *f = fopen(filename, "rb");
+    if (!f)
+        return 0;
+    load_elf(f);
+    fclose(f);
 }
