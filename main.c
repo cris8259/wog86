@@ -21,14 +21,12 @@ int main(int argc, char **argv, char **envp)
     if (!is_exec(filename))
         exit(-1);
     f = fopen(filename, "rb");
-    if (!load_elf(f))
+    if (!(entry = load_elf(f)))
         exit(-1);
 
     Elf32_Ehdr ehdr;
     x86regs regs;
 
-    fread(&ehdr, sizeof(Elf32_Ehdr), 1, f);
-    entry = ehdr.e_entry;
     e_argc = argc - 1;
     e_argv = argv + 1;
 

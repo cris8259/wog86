@@ -3,6 +3,7 @@
 #include<stdio.h>
 #include<string.h>
 #include<elf.h>
+#include<pthread.h>
 #include<sys/mman.h>
 #include"loader.h"
 
@@ -29,7 +30,7 @@ int check_elf(FILE * f)
     return 1;
 }
 
-int load_elf(FILE * f)
+unsigned int load_elf(FILE * f)
 {
     Elf32_Ehdr ehdr;
     Elf32_Phdr phdr;
@@ -38,11 +39,13 @@ int load_elf(FILE * f)
         return 0;
     fseek(f, 0, SEEK_SET);
     int fd = fileno(f);
+    unsigned int entry;
 
     if (fread(&ehdr, sizeof(Elf32_Ehdr), 1, f) != 1)
         return 0;
     if (fseek(f, ehdr.e_phoff, SEEK_SET) != 0)
         return 0;
+    entry = ehdr.e_entry;
     void *map_addr = NULL;
     unsigned int addr;
     unsigned int len;
@@ -68,11 +71,12 @@ int load_elf(FILE * f)
         }
     }
     map_addr =
-        mmap((void *)addr, len + PAGESIZE - 1, PROT_NONE,
+        mmap((void *)addr, (len + PAGESIZE - 1) & (~(PAGESIZE - 1)), PROT_NONE,
              MAP_PRIVATE | (ehdr.e_type == ET_EXEC ? MAP_FIXED : 0) | MAP_ANONYMOUS | MAP_NORESERVE,
              -1, 0);
     if (map_addr == MAP_FAILED)
         return 0;
+    entry = entry + (unsigned int)map_addr - addr;
     addr = (unsigned int)map_addr;
     fseek(f, ehdr.e_phoff, SEEK_SET);
     for (i = 0; i < ehdr.e_phnum; i++)
@@ -87,11 +91,14 @@ int load_elf(FILE * f)
                 prot |= PROT_WRITE;
             if (phdr.p_flags & PF_X)
                 prot |= PROT_EXEC;
-            mmap((void *)addr, phdr.p_filesz + PAGESIZE - 1, prot, MAP_FIXED | MAP_PRIVATE, fd,
-                 phdr.p_offset);
-            addr = addr & ~(PAGESIZE - 1);
-            addr = (addr + phdr.p_filesz + PAGESIZE - 1) & ~(PAGESIZE - 1);
+            map_addr =
+                mmap((void *)(addr & (~(PAGESIZE - 1))),
+                     (phdr.p_filesz + PAGESIZE - 1) & (~(PAGESIZE - 1)), prot,
+                     MAP_FIXED | MAP_PRIVATE, fd, phdr.p_offset & (~(PAGESIZE - 1)));
+            if (map_addr == MAP_FAILED)
+                return 0;
+            addr = ((unsigned int)map_addr + phdr.p_filesz + PAGESIZE - 1) & (~(PAGESIZE - 1));
         }
     }
-    return 1;
+    return entry;
 }
