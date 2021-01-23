@@ -43,11 +43,11 @@ int load_elf(FILE * f)
         return 0;
     if (fseek(f, ehdr.e_phoff, SEEK_SET) != 0)
         return 0;
-    void *map_addr;
+    void *map_addr = NULL;
     unsigned int addr;
     unsigned int len;
-    int i,j;
-    for (i = 0,j=0; i < ehdr.e_phnum; i++)
+    int i, j;
+    for (i = 0, j = 0; i < ehdr.e_phnum; i++)
     {
         if (fread(&phdr, sizeof(Elf32_Phdr), 1, f) != 1)
         {
@@ -55,39 +55,43 @@ int load_elf(FILE * f)
         }
         if (phdr.p_type == PT_LOAD)
         {
-		if(j==0){
-			addr=phdr.p_vaddr;
-			len=phdr.p_vaddr+phdr.p_memsz-addr;
-		}
-		if(addr>phdr.p_vaddr)
-			addr=phdr.p_vaddr;
-		if(len<phdr.p_vaddr+phdr.p_memsz-addr)
-			len=phdr.p_vaddr+phdr.p_memsz-addr;
-		j++;
+            if (j == 0)
+            {
+                addr = phdr.p_vaddr;
+                len = phdr.p_vaddr + phdr.p_memsz - addr;
+            }
+            if (addr > phdr.p_vaddr)
+                addr = phdr.p_vaddr;
+            if (len < phdr.p_vaddr + phdr.p_memsz - addr)
+                len = phdr.p_vaddr + phdr.p_memsz - addr;
+            j++;
         }
     }
-    map_addr=mmap((void*)addr,len+PAGESIZE-1,PROT_NONE,MAP_PRIVATE|(ehdr.e_type==ET_EXEC?MAP_FIXED:0)|MAP_ANONYMOUS|MAP_NORESERVE,-1,0);
-    if(map_addr==MAP_FAILED)
-	    return 0;
-    addr=(unsigned int)map_addr;
-    fseek(f,ehdr.e_phoff,SEEK_SET);
-    for(i=0;i<ehdr.e_phnum;i++)
+    map_addr =
+        mmap((void *)addr, len + PAGESIZE - 1, PROT_NONE,
+             MAP_PRIVATE | (ehdr.e_type == ET_EXEC ? MAP_FIXED : 0) | MAP_ANONYMOUS | MAP_NORESERVE,
+             -1, 0);
+    if (map_addr == MAP_FAILED)
+        return 0;
+    addr = (unsigned int)map_addr;
+    fseek(f, ehdr.e_phoff, SEEK_SET);
+    for (i = 0; i < ehdr.e_phnum; i++)
     {
-	    fread(&phdr,sizeof(Elf32_Phdr),1,f);
-	    if(phdr.p_type==PT_LOAD)
-	    {
-		    int prot=0;
-		    if(phdr.p_flags&PF_R)
-			    prot=PROT_READ;
-		    if(phdr.p_flags&PF_W)
-			    prot=prot?(prot|PROT_WRITE):PROT_WRITE;
-		    if(phdr.p_flags&PF_X)
-			    prot=prot?(prot|PROT_EXEC):PROT_EXEC;
-		    map_addr=mmap((void*)addr,phdr.p_filesz+PAGESIZE-1,prot,MAP_FIXED|MAP_PRIVATE,fd,phdr.p_offset);
-		    addr=((unsigned int)map_addr+phdr.p_filesz+PAGESIZE-1)&~(PAGESIZE-1);
-		    if(map_addr==MAP_FAILED)
-			    return 0;
-	    }
+        fread(&phdr, sizeof(Elf32_Phdr), 1, f);
+        if (phdr.p_type == PT_LOAD)
+        {
+            int prot = 0;
+            if (phdr.p_flags & PF_R)
+                prot |= PROT_READ;
+            if (phdr.p_flags & PF_W)
+                prot |= PROT_WRITE;
+            if (phdr.p_flags & PF_X)
+                prot |= PROT_EXEC;
+            mmap((void *)addr, phdr.p_filesz + PAGESIZE - 1, prot, MAP_FIXED | MAP_PRIVATE, fd,
+                 phdr.p_offset);
+            addr = addr & ~(PAGESIZE - 1);
+            addr = (addr + phdr.p_filesz + PAGESIZE - 1) & ~(PAGESIZE - 1);
+        }
     }
     return 1;
 }

@@ -15,7 +15,7 @@ int main(int argc, char **argv, char **envp)
     strcpy(filename, argv[1]);
     FILE *f;
     int e_argc;
-    char** e_argv;
+    char **e_argv;
     uint32_t entry;
 
     if (!is_exec(filename))
@@ -28,12 +28,12 @@ int main(int argc, char **argv, char **envp)
     x86regs regs;
 
     fread(&ehdr, sizeof(Elf32_Ehdr), 1, f);
-    entry=ehdr.e_entry;
-    e_argc=argc-1;
-    e_argv=argv+1;
+    entry = ehdr.e_entry;
+    e_argc = argc - 1;
+    e_argv = argv + 1;
 
-    regs.eax.dword[0]=e_argc;
-    regs.ebx.dword[0]=(uint32_t)e_argv;
-    regs.eip.dword[0]=entry;
-    while(1);
+    regs.eax.dword[0] = e_argc;
+    regs.ebx.dword[0] = (uint32_t) e_argv;
+    regs.eip.dword[0] = entry;
+    while (1) ;
 }
