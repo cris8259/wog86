@@ -4,8 +4,9 @@
 #include<string.h>
 #include<elf.h>
 #include<sys/mman.h>
-#include<sys/user.h>
 #include"loader.h"
+
+#define PAGESIZE getpagesize()
 
 int check_elf(FILE * f)
 {
@@ -23,8 +24,7 @@ int check_elf(FILE * f)
             && header.e_ident[EI_OSABI] != ELFOSABI_SYSV)
         || header.e_ehsize != sizeof(Elf32_Ehdr)
         || header.e_phentsize != sizeof(Elf32_Phdr)
-        || (header.e_type != ET_EXEC && header.e_type != ET_DYN)
-        || header.e_machine != EM_386)
+        || (header.e_type != ET_EXEC && header.e_type != ET_DYN) || header.e_machine != EM_386)
         return 0;
     return 1;
 }
@@ -68,19 +68,17 @@ int load_elf(FILE * f)
                 else
                     prot |= PROT_EXEC;
             if (mmap
-                ((void *)(phdr.p_vaddr & ~(PAGE_SIZE - 1)),
-                 phdr.p_filesz + PAGE_SIZE - 1, prot,
+                ((void *)(phdr.p_vaddr & ~(PAGESIZE - 1)),
+                 phdr.p_filesz + PAGESIZE - 1, prot,
                  MAP_PRIVATE | (ehdr.e_type == ET_EXEC ? MAP_FIXED : 0), fd,
-                 phdr.p_offset - (phdr.p_vaddr & (PAGE_SIZE - 1))) ==
-                MAP_FAILED)
+                 phdr.p_offset - (phdr.p_vaddr & (PAGESIZE - 1))) == MAP_FAILED)
                 return 0;
             if (phdr.p_filesz < phdr.p_memsz)
             {
                 if (mmap
-                    ((void *)((phdr.p_vaddr + phdr.p_filesz + PAGE_SIZE - 1) &
-                              ~(PAGE_SIZE - 1)), phdr.p_memsz - phdr.p_filesz,
-                     prot, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, -1,
-                     0) == MAP_FAILED)
+                    ((void *)((phdr.p_vaddr + phdr.p_filesz + PAGESIZE - 1) &
+                              ~(PAGESIZE - 1)), phdr.p_memsz - phdr.p_filesz,
+                     prot, MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE, -1, 0) == MAP_FAILED)
                     return 0;
             }
         }
