@@ -7,7 +7,7 @@
 #include<sys/mman.h>
 #include"loader.h"
 
-#define PAGESIZE getpagesize()
+#define PAGESIZE 4096
 
 int check_elf(FILE * f)
 {
@@ -69,6 +69,7 @@ unsigned int load_elf(FILE * f)
                 len = phdr.p_vaddr + phdr.p_memsz - addr;
             j++;
         }
+	if(phdr.p_type)
     }
     map_addr =
         mmap((void *)addr, (len + PAGESIZE - 1) & (~(PAGESIZE - 1)), PROT_NONE,
@@ -76,7 +77,6 @@ unsigned int load_elf(FILE * f)
              -1, 0);
     if (map_addr == MAP_FAILED)
         return 0;
-    entry = entry + (unsigned int)map_addr - addr;
     addr = (unsigned int)map_addr;
     fseek(f, ehdr.e_phoff, SEEK_SET);
     for (i = 0; i < ehdr.e_phnum; i++)
@@ -92,12 +92,19 @@ unsigned int load_elf(FILE * f)
             if (phdr.p_flags & PF_X)
                 prot |= PROT_EXEC;
             map_addr =
-                mmap((void *)(addr & (~(PAGESIZE - 1))),
+                mmap((void *)((ehdr.e_type==ET_DYN?addr:phdr.p_vaddr) & (~(PAGESIZE - 1))),
                      (phdr.p_filesz + PAGESIZE - 1) & (~(PAGESIZE - 1)), prot,
-                     MAP_FIXED | MAP_PRIVATE, fd, phdr.p_offset & (~(PAGESIZE - 1)));
+                     MAP_FIXED | MAP_PRIVATE, fd, phdr.p_offset-(phdr.p_vaddr-(phdr.p_vaddr&(~(PAGESIZE-1)))));
             if (map_addr == MAP_FAILED)
                 return 0;
-            addr = ((unsigned int)map_addr + phdr.p_filesz + PAGESIZE - 1) & (~(PAGESIZE - 1));
+	    addr+=phdr.p_filesz+PAGESIZE-1;
+	    addr&=~(PAGESIZE-1);
+	    if(phdr.p_filesz<phdr.p_memsz)
+	    {
+		    map_addr=mmap((void*)((ehdr.e_type==ET_DYN?addr:(phdr.p_vaddr&(~(PAGESIZE-1)))+phdr.p_filesz+PAGESIZE-1)&(~(PAGESIZE-1))),(phdr.p_memsz-phdr.p_filesz+PAGESIZE-1)&(~(PAGESIZE-1)),prot,MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS,-1,0);
+		    addr+=phdr.p_filesz+PAGESIZE-1;
+		    addr&=~(PAGESIZE-1);
+	    }
         }
     }
     return entry;
