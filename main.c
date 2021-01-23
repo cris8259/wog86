@@ -6,6 +6,7 @@
 #include"utils.h"
 #include"loader.h"
 #include"x86regs.h"
+#include"x86exec.h"
 int main(int argc, char **argv, char **envp)
 {
     if (argc < 2)
@@ -25,13 +26,13 @@ int main(int argc, char **argv, char **envp)
         exit(-1);
     fclose(f);
     Elf32_Ehdr ehdr;
-    x86regs regs;
+    x86regs x86regs;
 
     e_argc = argc - 1;
     e_argv = argv + 1;
 
-    regs.eax.dword[0] = e_argc;
-    regs.ebx.dword[0] = (uint32_t) e_argv;
-    regs.eip.dword[0] = entry;
-    while (1) ;
+    R_EAX = e_argc;
+    R_EBX = (uint32_t) e_argv;
+    R_EIP = entry;
+    x86_exec(&x86regs);
 }
