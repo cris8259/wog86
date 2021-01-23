@@ -35,4 +35,5 @@ int main(int argc, char **argv, char **envp)
     regs.eax.dword[0]=e_argc;
     regs.ebx.dword[0]=(uint32_t)e_argv;
     regs.eip.dword[0]=entry;
+    while(1);
 }
