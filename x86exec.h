@@ -1,1 +1,1 @@
-int x86_exec(x86regs * p_regs);
+int x86_exec (x86regs x86regs);

@@ -1,1 +1,1 @@
-int is_exec(const char *filename);
+int is_exec (const char *filename);
